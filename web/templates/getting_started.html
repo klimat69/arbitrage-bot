@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beginner Guide - BMLB Arbitrage Bot</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #0b0f14;
+            --panel: #111821;
+            --line: #263241;
+            --text: #eef3f8;
+            --muted: #9aa8b6;
+            --accent: #21c7a8;
+            --warn: #f4b942;
+            --danger: #ff6b6b;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            line-height: 1.6;
+        }
+        a { color: inherit; text-decoration: none; }
+        code, pre { font-family: Consolas, "Liberation Mono", monospace; }
+        .shell { width: min(920px, calc(100% - 32px)); margin: 0 auto; }
+        .topbar {
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            background: rgba(11,15,20,0.94);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .nav {
+            min-height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        .brand { font-weight: 750; }
+        .links { display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: 0.94rem; }
+        .links a:hover { color: var(--text); }
+        header.hero { padding: 58px 0 34px; }
+        .eyebrow { color: var(--accent); font-weight: 700; margin-bottom: 10px; }
+        h1 { font-size: clamp(2rem, 5vw, 3.6rem); line-height: 1.08; letter-spacing: 0; }
+        .lead { color: #c5d0da; max-width: 760px; margin-top: 18px; font-size: 1.08rem; }
+        main { padding-bottom: 56px; }
+        section {
+            padding: 30px 0;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        h2 { font-size: 1.48rem; margin-bottom: 14px; letter-spacing: 0; }
+        h3 { font-size: 1.05rem; margin: 18px 0 8px; }
+        p { color: #cbd5df; margin: 10px 0; }
+        ul, ol { color: #cbd5df; margin: 12px 0 0 22px; }
+        li { margin: 8px 0; }
+        .callout {
+            border: 1px solid rgba(244,185,66,0.45);
+            background: #171715;
+            border-radius: 8px;
+            padding: 16px;
+            color: #eadbb7;
+            margin: 18px 0;
+        }
+        .callout strong { color: #ffd77a; }
+        .danger {
+            border-color: rgba(255,107,107,0.45);
+            background: #1d1314;
+            color: #ffd0d0;
+        }
+        .danger strong { color: #ff9b9b; }
+        pre {
+            overflow-x: auto;
+            border: 1px solid var(--line);
+            background: var(--panel);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 14px 0;
+            color: #e6edf3;
+            line-height: 1.55;
+        }
+        code {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 5px;
+            padding: 1px 5px;
+        }
+        pre code { background: transparent; border: 0; padding: 0; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 14px;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+        }
+        th, td {
+            padding: 11px 12px;
+            border-bottom: 1px solid var(--line);
+            text-align: left;
+            vertical-align: top;
+        }
+        th { background: #141d27; color: var(--muted); font-weight: 650; }
+        tr:last-child td { border-bottom: 0; }
+        .exchange-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .exchange-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            border: 1px solid var(--line);
+            background: var(--panel);
+            border-radius: 7px;
+            font-weight: 700;
+        }
+        .exchange-link:hover { border-color: var(--accent); color: var(--accent); }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            padding: 0 16px;
+            border-radius: 7px;
+            border: 1px solid var(--line);
+            background: var(--panel);
+            color: var(--text);
+            font-weight: 650;
+            margin: 8px 8px 0 0;
+        }
+        .btn-primary { background: var(--accent); border-color: var(--accent); color: #06231d; }
+        footer {
+            border-top: 1px solid rgba(255,255,255,0.08);
+            color: var(--muted);
+            padding: 28px 0;
+        }
+        @media (max-width: 720px) {
+            .exchange-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <div class="shell nav">
+            <a class="brand" href="/">BMLB Arbitrage Bot</a>
+            <nav class="links" aria-label="Primary">
+                <a href="/">Landing</a>
+                <a href="/dashboard">Dashboard</a>
+                <a href="/docs">API Docs</a>
+            </nav>
+        </div>
+    </div>
+
+    <header class="hero">
+        <div class="shell">
+            <p class="eyebrow">Beginner guide</p>
+            <h1>Test safely before live trading</h1>
+            <p class="lead">
+                Start with fake-money and dry-run workflows. Do not add real exchange API keys
+                or run live modes until you understand the logs, dashboard, fees, slippage,
+                and exchange permissions.
+            </p>
+            <a class="btn btn-primary" href="#paper-trading">Start with paper trading</a>
+            <a class="btn" href="/dashboard">Open Dashboard</a>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section>
+            <h2>Quick mental model</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mode</th>
+                        <th>What it does</th>
+                        <th>Safe for beginners?</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>bots.demo_fake_bot</code></td>
+                        <td>Standalone demo with live market data and fake money. No exchange API keys needed.</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td><code>fake-money</code></td>
+                        <td>Full bot session using FakeMoneyBot. Records sessions/trades for dashboard review.</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td><code>--dry-run</code></td>
+                        <td>Safety flag that forces classic or delta-neutral commands to use FakeMoneyBot instead of real orders.</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td><code>classic</code> / <code>delta-neutral</code></td>
+                        <td>Live trading modes. These can place real orders when API keys and permissions are configured.</td>
+                        <td>No</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout">
+                <strong>Recommended path:</strong> demo first, then fake-money, then dry-run using the same command shape as live trading, then review the dashboard before considering real orders.
+            </div>
+        </section>
+
+        <section>
+            <h2>1. Install</h2>
+            <pre><code>git clone https://github.com/nguyenngocbinhneu/bmlb-arbitrage-bot.git
+cd bmlb-arbitrage-bot
+pip install -r requirements.txt</code></pre>
+            <p>For the first run, do not create a <code>.env</code> file with real trading keys. The safe demo does not need it.</p>
+        </section>
+
+        <section>
+            <h2>Exchange account links</h2>
+            <p>If you do not already have exchange accounts, these referral links can be used to sign up.</p>
+            <div class="exchange-grid" aria-label="Exchange sign-up links">
+                <a class="exchange-link" href="https://www.binance.com/vi/referral/earn-together/refer2earn-usdc/claim?hl=vi&ref=GRO_28502_F9YAO&utm_source=referral_entrance" rel="noopener noreferrer">Binance</a>
+                <a class="exchange-link" href="https://www.bybitglobal.com/invite?ref=LJ7X7P" rel="noopener noreferrer">Bybit</a>
+                <a class="exchange-link" href="https://www.okx.com/vi/join/8978408" rel="noopener noreferrer">OKX</a>
+                <a class="exchange-link" href="https://www.kucoin.com/ucenter/signup?rcode=QBSYA6AQ&utm_source=rf" rel="noopener noreferrer">KuCoin</a>
+            </div>
+            <div class="callout">
+                These may be referral links. Check each exchange's fees, regional availability, KYC rules, API permissions, and risk terms before using live trading features.
+            </div>
+        </section>
+
+        <section id="paper-trading">
+            <h2>2. Run the safest demo</h2>
+            <p>This command uses live exchange market data with fake money and does not place real orders.</p>
+            <pre><code>python -m bots.demo_fake_bot --symbol BTC/USDT --exchanges binance okx bybit --duration 5</code></pre>
+            <p>Use this to verify that dependencies, exchange connectivity, and your local environment work.</p>
+        </section>
+
+        <section>
+            <h2>3. Run a full paper trading session</h2>
+            <p><code>fake-money</code> runs the normal bot flow, but simulated trades are handled by FakeMoneyBot.</p>
+            <pre><code>python main.py fake-money 15 1000 binance kucoin okx BTC/USDT</code></pre>
+            <p>After the run, start the web dashboard to inspect sessions, trade records, PnL, fees, and slippage.</p>
+            <pre><code>python -m uvicorn web.app:app --reload --port 8000</code></pre>
+            <p>Open <code>http://localhost:8000/dashboard</code>.</p>
+        </section>
+
+        <section>
+            <h2>4. Use dry-run before any live mode</h2>
+            <p>
+                The <code>--dry-run</code> flag is a guardrail. In this codebase, if <code>--dry-run</code>
+                is present, <code>main.py</code> creates <code>FakeMoneyBot</code> even when the selected
+                mode is <code>classic</code> or <code>delta-neutral</code>.
+            </p>
+            <pre><code># Same shape as classic mode, but no real orders are sent.
+python main.py classic 15 1000 binance kucoin okx BTC/USDT --dry-run
+
+# Same shape as delta-neutral mode, but still forced to fake-money behavior.
+python main.py delta-neutral 15 1000 binance kucoin okx BTC/USDT --dry-run</code></pre>
+            <div class="callout">
+                <strong>Practical use:</strong> build and test the exact command you plan to use later, keep <code>--dry-run</code> on, then review dashboard results before removing it.
+            </div>
+        </section>
+
+        <section>
+            <h2>5. Multi-pair paper trading</h2>
+            <p>Start with small fake balances and a few liquid pairs.</p>
+            <pre><code>python main.py fake-money 15 1000 binance kucoin okx --symbols BTC/USDT ETH/USDT SOL/USDT</code></pre>
+            <p>You can also add <code>--dry-run</code> to classic or delta-neutral multi-pair commands to keep them simulated.</p>
+        </section>
+
+        <section>
+            <h2>Checklist before live trading</h2>
+            <ol>
+                <li>You have run fake-money sessions for the same exchanges and symbols.</li>
+                <li>You have reviewed dashboard PnL, fees, failed trades, and slippage.</li>
+                <li>You understand exchange API permissions and have disabled withdrawals on API keys.</li>
+                <li>You have set risk limits in <code>configs.py</code>.</li>
+                <li>You have tested with the smallest practical trade size.</li>
+                <li>You accept that live results can differ from paper trading because of latency, liquidity, fees, and partial fills.</li>
+            </ol>
+            <div class="callout danger">
+                <strong>Do not skip this:</strong> live crypto trading can lose money. This software does not guarantee profit and is not financial advice.
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="shell">BMLB Arbitrage Bot beginner guide. Use paper trading first.</div>
+    </footer>
+</body>
+</html>

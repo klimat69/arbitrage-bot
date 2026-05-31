@@ -1,0 +1,86 @@
+BMLB Arbitrage Bot License
+Version 1.0, 2026
+
+Copyright (c) 2026 Nguyễn Ngọc Bình. All Rights Reserved.
+
+================================================================================
+TERMS AND CONDITIONS
+================================================================================
+
+1. DEFINITIONS
+
+   "Software" means the BMLB Arbitrage Bot source code, documentation, and
+   associated files in this repository.
+
+   "Personal Use" means use by an individual for personal, non-commercial
+   purposes including learning, research, and personal trading.
+
+   "Commercial Use" means use by any organization, company, or entity in
+   connection with revenue-generating activities.
+
+   "Annual Revenue" means the total gross revenue of the organization in the
+   most recent completed fiscal year (in USD or equivalent).
+
+2. GRANT OF LICENSE
+
+   2.1. Personal Use — FREE
+        Any individual may use, copy, modify, and run the Software for personal
+        purposes at no cost.
+
+   2.2. Non-Profit & Educational Organizations — FREE
+        Non-profit organizations, educational institutions, universities, and
+        research institutes may use, copy, modify, and run the Software at no
+        cost.
+
+   2.3. Small Business (Annual Revenue < $1,000,000 USD) — FREE
+        Organizations with annual revenue below one million US dollars may use,
+        copy, modify, and run the Software at no cost.
+
+   2.4. Enterprise (Annual Revenue >= $1,000,000 USD) — COMMERCIAL LICENSE REQUIRED
+        Organizations with annual revenue of one million US dollars or more
+        must obtain a commercial license. The annual license fee is:
+
+        | Annual Revenue              | License Fee (USD/year) |
+        |-----------------------------|------------------------|
+        | $1,000,000 — $10,000,000    | $5,000                 |
+        | $10,000,001 — $50,000,000   | $15,000                |
+        | Over $50,000,000            | $30,000                |
+
+        Contact the author to obtain a commercial license (see Section 6).
+
+3. RESTRICTIONS
+
+   3.1. You may NOT redistribute, sublicense, or sell copies of the Software
+        without prior written consent from the copyright holder.
+
+   3.2. You may NOT remove or alter this license notice from any copy of the
+        Software.
+
+   3.3. You may NOT use the Software to provide a competing commercial
+        arbitrage service without a commercial license.
+
+4. CONTRIBUTIONS
+
+   Contributions to this repository are welcome. By submitting a contribution,
+   you agree that your contribution is licensed under the same terms as this
+   license.
+
+5. DISCLAIMER
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+   IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR
+   OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+   ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+   DEALINGS IN THE SOFTWARE.
+
+   CRYPTOCURRENCY TRADING INVOLVES SUBSTANTIAL RISK OF LOSS. THE AUTHOR IS NOT
+   RESPONSIBLE FOR ANY FINANCIAL LOSSES RESULTING FROM THE USE OF THIS SOFTWARE.
+
+6. CONTACT
+
+   To obtain a commercial license or for any licensing inquiries:
+   - GitHub: https://github.com/nguyenngocbinh
+   - Issues: https://github.com/nguyenngocbinh/bmlb-arbitrage-bot/issues

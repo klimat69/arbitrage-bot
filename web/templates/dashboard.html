@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMLB Arbitrage Bot Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #c9d1d9; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1 { color: #58a6ff; margin-bottom: 20px; }
+        h2 { color: #8b949e; margin: 20px 0 10px; font-size: 1.1rem; text-transform: uppercase; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 30px; }
+        .stat-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; }
+        .stat-card .label { font-size: 0.85rem; color: #8b949e; }
+        .stat-card .value { font-size: 1.5rem; font-weight: 600; margin-top: 4px; }
+        .positive { color: #3fb950; }
+        .negative { color: #f85149; }
+        .neutral { color: #58a6ff; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #21262d; }
+        th { color: #8b949e; font-weight: 500; font-size: 0.85rem; }
+        td { font-size: 0.9rem; }
+        tr:hover { background: #161b22; }
+        .status { padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; }
+        .status-completed { background: #238636; color: white; }
+        .status-running { background: #1f6feb; color: white; }
+        .status-error { background: #da3633; color: white; }
+        .footer { margin-top: 40px; text-align: center; color: #484f58; font-size: 0.85rem; }
+        .nav { display: flex; gap: 12px; margin-bottom: 20px; }
+        .nav a { color: #58a6ff; text-decoration: none; padding: 6px 12px; border: 1px solid #30363d; border-radius: 6px; }
+        .nav a:hover { background: #161b22; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BMLB Arbitrage Bot Dashboard</h1>
+
+        <div class="nav">
+            <a href="/">Landing</a>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/docs">API Docs</a>
+        </div>
+
+        <h2>Tổng quan</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="label">Tổng phiên</div>
+                <div class="value neutral">{{ stats.total_sessions or 0 }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Tổng giao dịch</div>
+                <div class="value neutral">{{ stats.total_trades_executed or 0 }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Tổng lợi nhuận (USD)</div>
+                <div class="value {% if (stats.total_profit_usd or 0) >= 0 %}positive{% else %}negative{% endif %}">
+                    {{ "%.4f"|format(stats.total_profit_usd or 0) }}
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Tổng phí (USD)</div>
+                <div class="value negative">{{ "%.4f"|format(stats.total_fees_usd or 0) }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Lợi nhuận TB / giao dịch</div>
+                <div class="value {% if (stats.avg_profit_per_trade_usd or 0) >= 0 %}positive{% else %}negative{% endif %}">
+                    {{ "%.4f"|format(stats.avg_profit_per_trade_usd or 0) }} USD
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Giao dịch tốt nhất</div>
+                <div class="value positive">{{ "%.4f"|format(stats.best_trade_usd or 0) }} USD</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Giao dịch tệ nhất</div>
+                <div class="value negative">{{ "%.4f"|format(stats.worst_trade_usd or 0) }} USD</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Tổng khối lượng</div>
+                <div class="value neutral">{{ "%.2f"|format(stats.total_volume_usd or 0) }} USD</div>
+            </div>
+        </div>
+
+        <h2>Phiên giao dịch gần đây</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Chế độ</th>
+                    <th>Cặp</th>
+                    <th>Sàn</th>
+                    <th>Vốn</th>
+                    <th>Lợi nhuận</th>
+                    <th>Giao dịch</th>
+                    <th>Trạng thái</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in sessions %}
+                <tr>
+                    <td>{{ session.id }}</td>
+                    <td>{{ session.mode }}</td>
+                    <td>{{ session.symbol }}</td>
+                    <td>{{ session.exchanges }}</td>
+                    <td>{{ "%.2f"|format(session.usdt_amount) }}</td>
+                    <td class="{% if (session.total_profit_usd or 0) >= 0 %}positive{% else %}negative{% endif %}">
+                        {{ "%.4f"|format(session.total_profit_usd or 0) }} USD
+                        ({{ "%.4f"|format(session.total_profit_pct or 0) }}%)
+                    </td>
+                    <td>{{ session.trades_executed or 0 }}</td>
+                    <td>
+                        <span class="status status-{{ session.status }}">{{ session.status }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not sessions %}
+                <tr><td colspan="8" style="text-align:center; color:#484f58;">Chưa có phiên giao dịch nào</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <div class="footer">
+            <p>BMLB Arbitrage Bot Dashboard v1.0 | API: <a href="/docs" style="color:#58a6ff">/docs</a></p>
+        </div>
+    </div>
+</body>
+</html>

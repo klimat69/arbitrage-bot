@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMLB Arbitrage Bot</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #0b0f14;
+            --panel: #111821;
+            --panel-2: #17212c;
+            --line: #263241;
+            --text: #eef3f8;
+            --muted: #9aa8b6;
+            --accent: #21c7a8;
+            --accent-2: #f4b942;
+            --danger: #ff6b6b;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            line-height: 1.5;
+        }
+        a { color: inherit; text-decoration: none; }
+        .shell { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            background: rgba(11,15,20,0.9);
+            backdrop-filter: blur(14px);
+        }
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 64px;
+            gap: 20px;
+        }
+        .brand { font-size: 1rem; font-weight: 700; letter-spacing: 0; }
+        .nav-links { display: flex; align-items: center; gap: 18px; color: var(--muted); font-size: 0.92rem; }
+        .nav-links a:hover { color: var(--text); }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            padding: 0 16px;
+            border-radius: 7px;
+            border: 1px solid var(--line);
+            background: var(--panel);
+            color: var(--text);
+            font-weight: 650;
+            white-space: nowrap;
+        }
+        .btn-primary { background: var(--accent); border-color: var(--accent); color: #06231d; }
+        .hero {
+            min-height: 620px;
+            display: grid;
+            align-items: center;
+            padding: 74px 0 46px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(rgba(11,15,20,0.82), rgba(11,15,20,0.94)),
+                repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 74px),
+                repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 54px);
+            pointer-events: none;
+        }
+        .hero-inner { position: relative; display: grid; grid-template-columns: 1fr; gap: 34px; }
+        .hero-copy { max-width: 760px; }
+        .eyebrow { color: var(--accent); font-weight: 700; margin-bottom: 14px; }
+        h1 { font-size: clamp(2.2rem, 6vw, 4.6rem); line-height: 1.03; letter-spacing: 0; max-width: 920px; }
+        .lead { max-width: 720px; margin-top: 20px; color: #c4ced8; font-size: 1.12rem; }
+        .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+        .terminal {
+            width: min(820px, 100%);
+            border: 1px solid rgba(255,255,255,0.14);
+            background: rgba(17,24,33,0.92);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 28px 70px rgba(0,0,0,0.32);
+        }
+        .terminal-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            height: 38px;
+            padding: 0 14px;
+            border-bottom: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 0.86rem;
+        }
+        .dot { width: 10px; height: 10px; border-radius: 999px; background: var(--danger); }
+        .dot:nth-child(2) { background: var(--accent-2); }
+        .dot:nth-child(3) { background: var(--accent); }
+        .terminal pre {
+            overflow-x: auto;
+            padding: 18px;
+            color: #dce6ef;
+            font: 0.92rem/1.7 Consolas, "Liberation Mono", monospace;
+        }
+        section { padding: 64px 0; border-top: 1px solid rgba(255,255,255,0.07); }
+        .section-head { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 26px; }
+        h2 { font-size: 1.8rem; line-height: 1.2; letter-spacing: 0; }
+        .section-copy { color: var(--muted); max-width: 620px; }
+        .feature-grid, .pricing-grid, .screenshot-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+        }
+        .exchange-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .exchange-link {
+            display: flex;
+            min-height: 54px;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel);
+            font-weight: 750;
+        }
+        .exchange-link:hover { border-color: var(--accent); color: var(--accent); }
+        .card, .price-card, .shot {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+        }
+        .card { padding: 20px; min-height: 164px; }
+        .card h3, .price-card h3 { font-size: 1.05rem; margin-bottom: 10px; }
+        .card p, .price-card p, .shot p { color: var(--muted); font-size: 0.94rem; }
+        .shot { overflow: hidden; }
+        .shot-screen { padding: 16px; min-height: 210px; background: #0e141b; border-bottom: 1px solid var(--line); }
+        .metric-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+        .metric { min-height: 56px; padding: 10px; border: 1px solid #283646; border-radius: 6px; background: #141d27; }
+        .metric span { display: block; color: var(--muted); font-size: 0.72rem; }
+        .metric strong { display: block; margin-top: 3px; font-size: 1rem; }
+        .bars { display: grid; gap: 8px; }
+        .bar { height: 10px; border-radius: 99px; background: #223044; overflow: hidden; }
+        .bar i { display: block; height: 100%; background: var(--accent); }
+        .table-mock { border: 1px solid #283646; border-radius: 6px; overflow: hidden; }
+        .table-mock div { display: grid; grid-template-columns: 1fr 1fr 0.8fr; padding: 9px 10px; border-bottom: 1px solid #283646; color: #dce6ef; font-size: 0.78rem; }
+        .table-mock div:last-child { border-bottom: 0; }
+        .shot-body { padding: 16px; }
+        .price-card { padding: 22px; display: flex; min-height: 310px; flex-direction: column; }
+        .price { font-size: 2rem; font-weight: 750; margin: 12px 0; }
+        .price small { color: var(--muted); font-size: 0.9rem; font-weight: 500; }
+        .list { display: grid; gap: 9px; margin: 16px 0 22px; color: #c8d2dc; font-size: 0.94rem; }
+        .list span::before { content: "✓ "; color: var(--accent); font-weight: 800; }
+        .price-card .btn { margin-top: auto; }
+        .highlight { border-color: rgba(33,199,168,0.65); box-shadow: inset 0 0 0 1px rgba(33,199,168,0.18); }
+        .disclaimer {
+            background: #171715;
+            border: 1px solid rgba(244,185,66,0.4);
+            border-radius: 8px;
+            padding: 22px;
+            color: #eadbb7;
+        }
+        .disclaimer strong { color: #ffd77a; }
+        footer { padding: 34px 0; color: var(--muted); border-top: 1px solid rgba(255,255,255,0.07); }
+        @media (max-width: 820px) {
+            .nav { align-items: flex-start; flex-direction: column; padding: 14px 0; }
+            .nav-links { flex-wrap: wrap; gap: 12px; }
+            .hero { min-height: auto; padding-top: 52px; }
+            .section-head { display: block; }
+            .section-copy { margin-top: 10px; }
+            .feature-grid, .pricing-grid, .screenshot-grid, .exchange-grid { grid-template-columns: 1fr; }
+            .metric-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="shell nav">
+            <a class="brand" href="/">BMLB Arbitrage Bot</a>
+            <nav class="nav-links" aria-label="Primary">
+                <a href="#demo">Demo</a>
+                <a href="/getting-started">Beginner guide</a>
+                <a href="#exchanges">Exchanges</a>
+                <a href="#screenshots">Screenshots</a>
+                <a href="#pricing">Pricing</a>
+                <a href="#disclaimer">Disclaimer</a>
+                <a class="btn" href="/dashboard">Dashboard</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="shell hero-inner">
+                <div class="hero-copy">
+                    <p class="eyebrow">Crypto arbitrage research and monitoring toolkit</p>
+                    <h1>BMLB Arbitrage Bot</h1>
+                    <p class="lead">
+                        Detect exchange spreads, paper trade with live orderbooks, backtest parameters,
+                        and monitor risk from a local FastAPI dashboard.
+                    </p>
+                <div class="hero-actions">
+                    <a class="btn btn-primary" href="#demo">Run demo</a>
+                    <a class="btn" href="/getting-started">Read Beginner Guide</a>
+                    <a class="btn" href="/dashboard">Open Dashboard</a>
+                    <a class="btn" href="/docs">API Docs</a>
+                </div>
+                </div>
+                <div class="terminal" id="demo" aria-label="Demo command">
+                    <div class="terminal-head">
+                        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                        <span>paper trading demo</span>
+                    </div>
+                    <pre>python -m bots.demo_fake_bot --symbol BTC/USDT --exchanges binance okx bybit --duration 5
+
+python -m uvicorn web.app:app --reload --port 8000
+
+# Open http://localhost:8000/dashboard for sessions, trades, PnL, fees, and slippage.</pre>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="shell">
+                <div class="section-head">
+                    <h2>What it includes</h2>
+                    <p class="section-copy">A practical stack for scanning, simulation, and operational visibility before any live trading decision.</p>
+                </div>
+                <div class="feature-grid">
+                    <article class="card">
+                        <h3>Realtime scanner</h3>
+                        <p>WebSocket orderbook ingestion through ccxt.pro across Binance, KuCoin, OKX, and Bybit.</p>
+                    </article>
+                    <article class="card">
+                        <h3>Paper trading</h3>
+                        <p>Fake-money mode uses live market data without sending real orders, making demos and validation safer.</p>
+                    </article>
+                    <article class="card">
+                        <h3>Risk controls</h3>
+                        <p>Drawdown limits, loss caps, cooldown, circuit breaker, rate limiting, and slippage tracking.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="shell">
+                <div class="section-head">
+                    <h2>Safe testing path</h2>
+                    <p class="section-copy">New users should validate the bot with fake money first. Live trading should only be enabled after paper results, logs, fees, and exchange permissions are understood.</p>
+                </div>
+                <div class="feature-grid">
+                    <article class="card">
+                        <h3>1. Demo mode</h3>
+                        <p>Run the standalone fake-money demo. It reads market data but does not require exchange API keys.</p>
+                    </article>
+                    <article class="card">
+                        <h3>2. Paper trading</h3>
+                        <p>Use <code>fake-money</code> mode for normal bot sessions. It records sessions and trades to SQLite for dashboard review.</p>
+                    </article>
+                    <article class="card">
+                        <h3>3. Dry-run guard</h3>
+                        <p>Add <code>--dry-run</code> to classic or delta-neutral commands to force the bot onto the FakeMoneyBot path.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="exchanges">
+            <div class="shell">
+                <div class="section-head">
+                    <h2>Exchange account links</h2>
+                    <p class="section-copy">Use these referral links if you need to create accounts on the exchanges supported by the bot. Review fees, KYC, regional access, and API permissions before live trading.</p>
+                </div>
+                <div class="exchange-grid" aria-label="Exchange sign-up links">
+                    <a class="exchange-link" href="https://www.binance.com/vi/referral/earn-together/refer2earn-usdc/claim?hl=vi&ref=GRO_28502_F9YAO&utm_source=referral_entrance" rel="noopener noreferrer">Binance</a>
+                    <a class="exchange-link" href="https://www.bybitglobal.com/invite?ref=LJ7X7P" rel="noopener noreferrer">Bybit</a>
+                    <a class="exchange-link" href="https://www.okx.com/vi/join/8978408" rel="noopener noreferrer">OKX</a>
+                    <a class="exchange-link" href="https://www.kucoin.com/ucenter/signup?rcode=QBSYA6AQ&utm_source=rf" rel="noopener noreferrer">KuCoin</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="screenshots">
+            <div class="shell">
+                <div class="section-head">
+                    <h2>Screenshots</h2>
+                    <p class="section-copy">Product views to show prospects what the scanner, dashboard, and analysis workflow look like.</p>
+                </div>
+                <div class="screenshot-grid">
+                    <article class="shot">
+                        <div class="shot-screen">
+                            <div class="metric-row">
+                                <div class="metric"><span>Total PnL</span><strong>$128.40</strong></div>
+                                <div class="metric"><span>Trades</span><strong>42</strong></div>
+                                <div class="metric"><span>Fees</span><strong>$18.21</strong></div>
+                            </div>
+                            <div class="bars">
+                                <div class="bar"><i style="width: 78%"></i></div>
+                                <div class="bar"><i style="width: 54%"></i></div>
+                                <div class="bar"><i style="width: 66%"></i></div>
+                            </div>
+                        </div>
+                        <div class="shot-body">
+                            <h3>Dashboard overview</h3>
+                            <p>Track sessions, aggregate PnL, trading volume, and fee impact.</p>
+                        </div>
+                    </article>
+                    <article class="shot">
+                        <div class="shot-screen">
+                            <div class="table-mock">
+                                <div><strong>Pair</strong><strong>Route</strong><strong>Spread</strong></div>
+                                <div><span>BTC/USDT</span><span>OKX -> Bybit</span><span>0.18%</span></div>
+                                <div><span>ETH/USDT</span><span>KuCoin -> OKX</span><span>0.13%</span></div>
+                                <div><span>SOL/USDT</span><span>Binance -> OKX</span><span>0.11%</span></div>
+                            </div>
+                        </div>
+                        <div class="shot-body">
+                            <h3>Opportunity feed</h3>
+                            <p>Surface spread candidates by pair, route, expected fees, and slippage.</p>
+                        </div>
+                    </article>
+                    <article class="shot">
+                        <div class="shot-screen">
+                            <div class="metric-row">
+                                <div class="metric"><span>Win rate</span><strong>61%</strong></div>
+                                <div class="metric"><span>Sharpe</span><strong>1.42</strong></div>
+                                <div class="metric"><span>Max DD</span><strong>3.1%</strong></div>
+                            </div>
+                            <div class="bars">
+                                <div class="bar"><i style="width: 40%; background: #f4b942"></i></div>
+                                <div class="bar"><i style="width: 84%"></i></div>
+                                <div class="bar"><i style="width: 25%; background: #ff6b6b"></i></div>
+                            </div>
+                        </div>
+                        <div class="shot-body">
+                            <h3>Backtest report</h3>
+                            <p>Replay historical orderbook data and compare parameter sets before deployment.</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="pricing">
+            <div class="shell">
+                <div class="section-head">
+                    <h2>Pricing</h2>
+                    <p class="section-copy">Start free for personal research. Upgrade when the tool becomes part of a trading operation.</p>
+                </div>
+                <div class="pricing-grid">
+                    <article class="price-card">
+                        <h3>Community</h3>
+                        <p>For personal learning, local paper trading, and research.</p>
+                        <div class="price">$0 <small>/ year</small></div>
+                        <div class="list">
+                            <span>Local dashboard</span>
+                            <span>Fake-money mode</span>
+                            <span>Basic backtesting</span>
+                        </div>
+                        <a class="btn" href="#demo">Run locally</a>
+                    </article>
+                    <article class="price-card highlight">
+                        <h3>Pro Local</h3>
+                        <p>For serious traders who need repeatable monitoring and reports.</p>
+                        <div class="price">$29 <small>/ month</small></div>
+                        <div class="list">
+                            <span>Advanced reports</span>
+                            <span>More alert channels</span>
+                            <span>Deployment guides</span>
+                        </div>
+                        <a class="btn btn-primary" href="https://github.com/nguyenngocbinhneu/bmlb-arbitrage-bot/issues">Request access</a>
+                    </article>
+                    <article class="price-card">
+                        <h3>Enterprise</h3>
+                        <p>For teams using the bot in commercial trading infrastructure.</p>
+                        <div class="price">$5k+ <small>/ year</small></div>
+                        <div class="list">
+                            <span>Commercial license</span>
+                            <span>Custom exchange integration</span>
+                            <span>Priority support</span>
+                        </div>
+                        <a class="btn" href="https://github.com/nguyenngocbinhneu/bmlb-arbitrage-bot/issues">Contact</a>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="disclaimer">
+            <div class="shell">
+                <div class="disclaimer">
+                    <strong>Risk disclaimer.</strong>
+                    BMLB Arbitrage Bot is research and automation software, not financial advice.
+                    Crypto trading can lose money due to fees, latency, slippage, exchange outages,
+                    API failures, liquidation risk, and market volatility. No profit is promised.
+                    Users are responsible for testing, configuration, legal compliance, and all trading outcomes.
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="shell">BMLB Arbitrage Bot. Local-first arbitrage research, paper trading, and monitoring.</div>
+    </footer>
+</body>
+</html>
