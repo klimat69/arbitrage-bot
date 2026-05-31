@@ -12,7 +12,13 @@ from utils.logger import log_info, log_error, log_warning, log_debug
 from utils.exceptions import ArbitrageError, ExchangeError, InsufficientBalanceError, OrderError
 from utils.helpers import calculate_average
 from bots.base_bot import BaseBot
-from configs import EXCHANGE_FEES, RISK_CONFIG
+from configs import (
+    EXCHANGE_FEES,
+    RISK_CONFIG,
+    SIGNAL_EXCHANGE,
+    EXECUTION_EXCHANGE,
+)
+from strategies.large_order_detector import LargeOrderDetector
 
 
 class ClassicBot(BaseBot):
@@ -59,6 +65,10 @@ class ClassicBot(BaseBot):
             'failed_trades': 0,
             'total_volume': 0
         }
+        self.signal_exchange = SIGNAL_EXCHANGE
+        self.execution_exchange = EXECUTION_EXCHANGE
+        self.large_order_detector: Optional[LargeOrderDetector] = None
+        self._signal_cooldown_until = 0.0
     
     async def start(self) -> float:
         """
@@ -158,8 +168,8 @@ class ClassicBot(BaseBot):
             # Cập nhật số lượng crypto mỗi giao dịch
             self.crypto_per_transaction = (total_crypto / len(self.exchanges)) * 0.99  # Giảm 1% để đảm bảo đủ số dư
             
-            # Bắt đầu vòng lặp theo dõi sách lệnh
-            await self._start_orderbook_loop()
+            # Bắt đầu vòng lặp theo dõi large orders trên Binance (сигналы)
+            await self._start_signal_detector_loop()
             
             # Hiển thị thống kê trước khi kết thúc
             self._display_stats()
@@ -187,112 +197,111 @@ class ClassicBot(BaseBot):
                 
             return 0
     
-    async def _start_orderbook_loop(self) -> float:
+    async def _start_signal_detector_loop(self) -> float:
         """
-        Bắt đầu vòng lặp theo dõi sách lệnh trên tất cả các sàn.
-        
+        Theo dõi large limit orders trên Binance và thực thi trên MEXC.
+
         Returns:
             float: Tổng lợi nhuận (phần trăm)
         """
-        try:
-            # Tạo các vòng lặp cho từng sàn giao dịch
-            exchange_loops = []
-            
-            for exchange_id in self.exchanges:
-                exchange_loops.append(self._exchange_loop(exchange_id))
-                
-            # Chạy tất cả các vòng lặp
-            await gather(*exchange_loops)
-            
-            return self.total_absolute_profit_pct
-            
-        except Exception as e:
-            log_error(f"Lỗi trong vòng lặp theo dõi sách lệnh: {str(e)}")
-            log_debug(f"Chi tiết lỗi: {traceback.format_exc()}")
-            raise
-    
-    async def _exchange_loop(self, exchange_id: str) -> None:
-        """
-        Vòng lặp theo dõi sách lệnh cho một sàn giao dịch cụ thể.
-        
-        Args:
-            exchange_id (str): ID của sàn giao dịch
-            
-        Returns:
-            None
-        """
         pro_exchange = None
         try:
-            # Tạo đối tượng sàn giao dịch ccxt.pro
-            log_info(f"Bắt đầu theo dõi sách lệnh trên sàn {exchange_id}")
-            pro_exchange = await self.exchange_service.get_pro_exchange(exchange_id)
-            
-            connection_errors = 0
-            max_connection_errors = 5
-            reconnect_delay = 5  # giây
-            
-            # Theo dõi sách lệnh cho đến khi hết thời gian
-            while time.time() <= self.timeout:
-                try:
-                    # Lấy thông tin sách lệnh mới nhất
-                    orderbook = await pro_exchange.watch_order_book(self.symbol)
-                    
-                    # Đặt lại bộ đếm lỗi kết nối khi thành công
-                    if connection_errors > 0:
-                        log_info(f"Kết nối lại thành công với {exchange_id}")
-                        connection_errors = 0
-                    
-                    # Xử lý dữ liệu sách lệnh
-                    opportunity_found = await self.process_orderbook(exchange_id, orderbook)
-                    
-                    if opportunity_found:
-                        self.stats['opportunities_found'] += 1
-                    
-                except ccxt.pro.NetworkError as network_error:
-                    connection_errors += 1
-                    log_warning(f"Lỗi kết nối với {exchange_id} (lần {connection_errors}/{max_connection_errors}): {str(network_error)}")
-                    
-                    if connection_errors >= max_connection_errors:
-                        log_error(f"Đã vượt quá số lần thử kết nối với {exchange_id}. Đang khởi động lại kết nối...")
-                        
-                        # Đóng kết nối hiện tại
-                        await pro_exchange.close()
-                        
-                        # Tạo kết nối mới
-                        pro_exchange = await self.exchange_service.get_pro_exchange(exchange_id)
-                        connection_errors = 0
-                        log_info(f"Đã khởi động lại kết nối với {exchange_id}")
-                    
-                    # Đợi trước khi thử lại
-                    await asyncio.sleep(reconnect_delay)
-                    
-                except Exception as loop_error:
-                    log_error(f"Lỗi trong vòng lặp {exchange_id}: {str(loop_error)}")
-                    log_debug(f"Chi tiết lỗi: {traceback.format_exc()}")
-                    
-                    # Đợi một chút trước khi tiếp tục
-                    await asyncio.sleep(1)
-                    
-                    # Không thoát vòng lặp, tiếp tục thử lại
-                
-                # Đợi một chút để giảm tải cho CPU
-                await asyncio.sleep(0.1)
-            
-            # Đóng kết nối với sàn giao dịch
-            log_info(f"Kết thúc theo dõi sách lệnh trên sàn {exchange_id}")
-            if pro_exchange:
-                await pro_exchange.close()
-                
+            self.large_order_detector = LargeOrderDetector.from_env(
+                symbol=self.symbol,
+                on_valid_signal=self._on_large_order_signal,
+                signal_exchange=self.signal_exchange,
+            )
+            log_info(
+                f"Signal pipeline: {self.signal_exchange} → {self.execution_exchange}"
+            )
+            pro_exchange = await self.exchange_service.get_pro_exchange(self.signal_exchange)
+            await self.large_order_detector.watch(pro_exchange, self.timeout)
+            return self.total_absolute_profit_pct
         except Exception as e:
-            log_error(f"Lỗi khi khởi tạo vòng lặp cho {exchange_id}: {str(e)}")
+            log_error(f"Lỗi trong vòng lặp large order detector: {str(e)}")
             log_debug(f"Chi tiết lỗi: {traceback.format_exc()}")
-            
-            # Đảm bảo kết nối được đóng đúng cách
+            raise
+        finally:
+            if self.large_order_detector:
+                self.large_order_detector.stop()
             if pro_exchange:
                 try:
                     await pro_exchange.close()
                 except Exception:
                     pass
+
+    async def _on_large_order_signal(self, signal: dict[str, Any]) -> None:
+        """Callback khi phát hiện large order hợp lệ — thực thi trên MEXC."""
+        now = time.time()
+        if now < self._signal_cooldown_until:
+            return
+
+        notifier = getattr(self, 'telegram_notifier', None)
+        self.stats['opportunities_found'] += 1
+        side = signal['side']
+        price = signal['price']
+        amount = min(signal['amount'], self.crypto_per_transaction or 0.001)
+        proposed_usdt = amount * price
+
+        allowed, reason = self.risk_manager.can_open(
+            self.symbol, proposed_usdt, current_time=now
+        )
+        if not allowed:
+            log_warning(f"Risk manager chặn signal: {reason}")
+            return
+
+        if self.notification_service:
+            self.notification_service.send_message(
+                f"🔔 Large order signal ({self.signal_exchange})\n"
+                f"{side.upper()} {amount:.6f} @ {price}\n"
+                f"BTC equiv: ~{signal['btc_volume']:.2f}\n"
+                f"TTL validated: {signal['lifetime_seconds']:.1f}s"
+            )
+        if notifier:
+            await notifier.notify_signal(
+                self.signal_exchange, side, price, amount, signal['btc_volume']
+            )
+
+        try:
+            execution_ex = self.execution_exchange
+            if side == 'bid':
+                log_info(f"MEXC entry: market BUY {amount} @ ~{price}")
+                order = await self.exchange_service.async_create_limit_buy_order(
+                    execution_ex, self.symbol, amount, price
+                )
+            else:
+                log_info(f"MEXC entry: market SELL {amount} @ ~{price}")
+                order = await self.exchange_service.async_create_limit_sell_order(
+                    execution_ex, self.symbol, amount, price
+                )
+
+            fee_rate = EXCHANGE_FEES.get(execution_ex, {}).get('give', 0.001)
+            estimated_pnl = amount * price * 0.001
+            self.risk_manager.record_trade(estimated_pnl)
+            self.stats['trades_executed'] += 1
+            self.stats['total_volume'] += proposed_usdt
+            self._signal_cooldown_until = now + 5
+
+            if self.notification_service:
+                self.notification_service.send_message(
+                    f"✅ Position opened on {execution_ex}\n"
+                    f"{side.upper()} {amount:.6f} {self.symbol}\n"
+                    f"Order id: {order.get('id', 'n/a')}"
+                )
+            if notifier:
+                await notifier.notify_position_opened(
+                    execution_ex, side, self.symbol, amount, str(order.get('id', 'n/a'))
+                )
+        except Exception as exc:
+            self.stats['failed_trades'] += 1
+            self.risk_manager.record_trade(-proposed_usdt * 0.001)
+            log_error(f"Lỗi thực thi trên {self.execution_exchange}: {exc}")
+            if self.notification_service:
+                self.notification_service.send_message(
+                    f"❌ Execution failed on {self.execution_exchange}: {exc}"
+                )
+            if notifier:
+                await notifier.notify_critical_error('MEXC execution', str(exc))
     
     async def _execute_trade(self, min_ask_ex: str, max_bid_ex: str,
                              profit_with_fees_pct: float, profit_with_fees_usd: float) -> None:
