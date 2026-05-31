@@ -1,31 +1,35 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller spec for macOS Intel (.app)."""
-import sys
+"""PyInstaller spec for macOS Intel — ArbitrageBot.app"""
 from pathlib import Path
 
 ROOT = Path(SPECPATH)
+
+HIDDEN = [
+    'asyncio',
+    'ccxt',
+    'ccxt.pro',
+    'ccxt.async_support',
+    'aiohttp',
+    'websockets',
+    'dotenv',
+    'strategies',
+    'strategies.large_order_detector',
+    'risk',
+    'risk.risk_manager',
+    'utils.telegram',
+    'bots.classic_bot',
+    'aiosqlite',
+    'colorama',
+    'requests',
+    'httpx',
+]
 
 a = Analysis(
     [str(ROOT / 'main.py')],
     pathex=[str(ROOT)],
     binaries=[],
-    datas=[
-        (str(ROOT / 'web' / 'templates'), 'web/templates'),
-    ],
-    hiddenimports=[
-        'ccxt',
-        'ccxt.pro',
-        'ccxt.async_support',
-        'dotenv',
-        'aiohttp',
-        'aiosqlite',
-        'colorama',
-        'fastapi',
-        'uvicorn',
-        'jinja2',
-        'httpx',
-        'requests',
-    ],
+    datas=[(str(ROOT / 'web' / 'templates'), 'web/templates')],
+    hiddenimports=HIDDEN,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -39,7 +43,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='arbitrage-bot',
+    name='ArbitrageBot',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -50,7 +54,6 @@ exe = EXE(
     target_arch='x86_64',
     codesign_identity=None,
     entitlements_file=None,
-    icon=str(ROOT / 'assets' / 'icon.ico'),
 )
 coll = COLLECT(
     exe,
@@ -59,11 +62,10 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='arbitrage-bot',
+    name='ArbitrageBot',
 )
 app = BUNDLE(
     coll,
-    name='arbitrage-bot.app',
-    icon=str(ROOT / 'assets' / 'icon.ico'),
+    name='ArbitrageBot.app',
     bundle_identifier='com.arbitrage.bot',
 )

@@ -37,7 +37,6 @@ from bots.fake_money_bot import FakeMoneyBot
 from utils.logger import log_info, log_error, log_warning, logger, safe_print, configure_console_encoding
 from utils.helpers import show_time
 from utils.session_recovery import SessionRecovery
-from utils.license import require_valid_license_or_exit
 from utils.telegram import TelegramNotifier
 from configs import PYTHON_COMMAND, ENABLE_TELEGRAM, BOT_MODES
 
@@ -380,9 +379,6 @@ async def run_bot(mode, symbol, usdt_amount, renew_time, exchanges, dry_run=Fals
 async def main():
     """Hàm chính của ứng dụng."""
     try:
-        # License check (cached 24h, no auto-updates)
-        require_valid_license_or_exit()
-
         # Thiết lập logging
         setup_logging()
         

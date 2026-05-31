@@ -1,31 +1,35 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller spec for Windows (.exe)."""
-import sys
+"""PyInstaller spec for Windows — ArbitrageBot.exe"""
 from pathlib import Path
 
 ROOT = Path(SPECPATH)
+
+HIDDEN = [
+    'asyncio',
+    'ccxt',
+    'ccxt.pro',
+    'ccxt.async_support',
+    'aiohttp',
+    'websockets',
+    'dotenv',
+    'strategies',
+    'strategies.large_order_detector',
+    'risk',
+    'risk.risk_manager',
+    'utils.telegram',
+    'bots.classic_bot',
+    'aiosqlite',
+    'colorama',
+    'requests',
+    'httpx',
+]
 
 a = Analysis(
     [str(ROOT / 'main.py')],
     pathex=[str(ROOT)],
     binaries=[],
-    datas=[
-        (str(ROOT / 'web' / 'templates'), 'web/templates'),
-    ],
-    hiddenimports=[
-        'ccxt',
-        'ccxt.pro',
-        'ccxt.async_support',
-        'dotenv',
-        'aiohttp',
-        'aiosqlite',
-        'colorama',
-        'fastapi',
-        'uvicorn',
-        'jinja2',
-        'httpx',
-        'requests',
-    ],
+    datas=[(str(ROOT / 'web' / 'templates'), 'web/templates')],
+    hiddenimports=HIDDEN,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -41,7 +45,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='arbitrage-bot',
+    name='ArbitrageBot',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -54,5 +58,4 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=str(ROOT / 'assets' / 'icon.ico'),
 )

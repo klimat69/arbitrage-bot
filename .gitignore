@@ -12,7 +12,6 @@ build/
 *.db
 .pytest_cache/
 data/
-license.cache
 
 # PyInstaller
 dist/
