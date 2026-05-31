@@ -37,6 +37,8 @@ from bots.fake_money_bot import FakeMoneyBot
 from utils.logger import log_info, log_error, log_warning, logger, safe_print, configure_console_encoding
 from utils.helpers import show_time
 from utils.session_recovery import SessionRecovery
+from utils.license import require_valid_license_or_exit
+from utils.telegram import TelegramNotifier
 from configs import PYTHON_COMMAND, ENABLE_TELEGRAM, BOT_MODES
 
 configure_console_encoding()
@@ -273,6 +275,7 @@ async def run_bot(mode, symbol, usdt_amount, renew_time, exchanges, dry_run=Fals
         balance_service = BalanceService(exchange_service)
         order_service = OrderService(exchange_service)
         notification_service = NotificationService(ENABLE_TELEGRAM)
+        telegram_notifier = TelegramNotifier(enabled=ENABLE_TELEGRAM)
         db_service = DatabaseService()
         recovery = SessionRecovery(db_service)
         
@@ -329,6 +332,7 @@ async def run_bot(mode, symbol, usdt_amount, renew_time, exchanges, dry_run=Fals
         # Cấu hình bot
         timeout = renew_time * 60  # Chuyển đổi phút sang giây
         bot.configure(symbol, exchanges, timeout, usdt_amount, symbol)
+        bot.telegram_notifier = telegram_notifier
         
         # Chạy bot
         start_time = time.time()
@@ -356,6 +360,9 @@ async def run_bot(mode, symbol, usdt_amount, renew_time, exchanges, dry_run=Fals
                     recovery.mark_interrupted(bot.session_id, error_msg)
                 except Exception as recovery_error:
                     log_error(f"Lỗi khi đánh dấu phiên interrupted: {str(recovery_error)}")
+
+            if telegram_notifier.enabled:
+                await telegram_notifier.notify_critical_error('run_bot', error_msg)
             
             raise
         
@@ -373,6 +380,9 @@ async def run_bot(mode, symbol, usdt_amount, renew_time, exchanges, dry_run=Fals
 async def main():
     """Hàm chính của ứng dụng."""
     try:
+        # License check (cached 24h, no auto-updates)
+        require_valid_license_or_exit()
+
         # Thiết lập logging
         setup_logging()
         
