@@ -11,8 +11,12 @@ build/
 *.db
 .pytest_cache/
 data/
+license.cache
 
-# VSCode or IDE
+# PyInstaller
+dist/
+build/
+*.spec.bak
 .vscode/
 .idea/
 
