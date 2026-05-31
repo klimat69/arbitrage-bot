@@ -16,7 +16,7 @@ from utils.helpers import show_time, extract_base_asset
 from configs import PROFIT_CRITERIA_PCT, PROFIT_CRITERIA_USD, ENABLE_CTRL_C_HANDLING
 from services.database_service import DatabaseService
 from services.async_order_service import AsyncOrderService
-from services.risk_manager import RiskManager
+from risk.risk_manager import RiskManager
 
 
 class BaseBot:
@@ -417,8 +417,9 @@ class BaseBot:
             return False
         
         # Kiểm tra risk management
-        allowed, reason = self.risk_manager.check_pre_trade(
-            profit_with_fees_usd, current_time=time.time()
+        proposed_usdt = self.crypto_per_transaction * self.min_ask_price
+        allowed, reason = self.risk_manager.can_open(
+            self.symbol, proposed_usdt, current_time=time.time()
         )
         if not allowed:
             log_warning(f"Risk manager chặn giao dịch: {reason}")
