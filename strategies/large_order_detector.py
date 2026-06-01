@@ -13,6 +13,7 @@ from typing import Any, Awaitable, Callable, Optional
 
 import os
 
+from strategies.binance_futures_ws import stream_depth
 from utils.logger import log_debug, log_info, log_warning
 
 
@@ -72,7 +73,7 @@ class LargeOrderDetector:
         return f"{side}:{price:.8f}"
 
     def _btc_volume(self, amount: float, price: float) -> float:
-        base = self.symbol.split("/")[0].upper()
+        base = self.symbol.split("/")[0].split(":")[0].upper()
         if base == "BTC":
             return amount
         if base == "ETH":
@@ -187,29 +188,21 @@ class LargeOrderDetector:
             await self.on_valid_signal(signal)
         return emitted
 
-    async def watch(
-        self,
-        pro_exchange: Any,
-        timeout_at: float,
-        poll_sleep: float = 0.05,
-    ) -> None:
-        """Subscribe to incremental order book via ccxt.pro until timeout."""
+    async def watch_public_ws(self, timeout_at: float) -> None:
+        """Watch Binance futures depth via public WebSocket (no API keys)."""
         self._running = True
         log_info(
-            f"LargeOrderDetector watching {self.symbol} on {self.signal_exchange} "
+            f"LargeOrderDetector watching {self.symbol} via Binance fstream "
             f"(threshold={self.threshold_btc} BTC, TTL={self.order_ttl_seconds}s)"
         )
+        def _should_continue() -> bool:
+            return self._running and time.time() <= timeout_at
+
         try:
-            while self._running and time.time() <= timeout_at:
-                try:
-                    orderbook = await pro_exchange.watch_order_book(self.symbol)
-                    await self.process_orderbook(orderbook)
-                except asyncio.CancelledError:
-                    raise
-                except Exception as exc:
-                    log_warning(f"Order book watch error: {exc}")
-                    await asyncio.sleep(1)
-                await asyncio.sleep(poll_sleep)
+            async for orderbook in stream_depth(should_continue=_should_continue):
+                await self.process_orderbook(orderbook)
+        except asyncio.CancelledError:
+            raise
         finally:
             self._running = False
 

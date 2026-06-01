@@ -50,10 +50,11 @@ class ExchangeService:
     Lớp dịch vụ tương tác với các sàn giao dịch cryptocurrency.
     """
     
-    def __init__(self) -> None:
+    def __init__(self, credentials: Optional[dict[str, str]] = None) -> None:
         """Khởi tạo dịch vụ sàn giao dịch."""
         self.exchanges = {}
         self.exchange_instances = {}
+        self._credentials = credentials or {}
         self._use_sandbox = os.getenv('USE_SANDBOX', 'false').lower() == 'true'
         self._rate_limiter = get_rate_limiter()
         self._initialize_exchanges()
@@ -69,6 +70,8 @@ class ExchangeService:
 
     def _get_env_value(self, prod_key: str, testnet_key: str) -> Optional[str]:
         """Lấy giá trị env, ưu tiên key testnet khi bật sandbox."""
+        if prod_key in self._credentials and self._credentials[prod_key]:
+            return self._credentials[prod_key]
         if self._use_sandbox:
             testnet_value = os.getenv(testnet_key)
             if testnet_value:
@@ -91,12 +94,26 @@ class ExchangeService:
         okx_secret = self._get_env_value('OKX_SECRET', 'OKX_TESTNET_SECRET')
         okx_password = self._get_env_value('OKX_PASSWORD', 'OKX_TESTNET_PASSWORD')
 
-        # Khởi tạo Binance
+        mexc_api_key = self._get_env_value('MEXC_API_KEY', 'MEXC_TESTNET_API_KEY')
+        mexc_secret = self._get_env_value('MEXC_SECRET', 'MEXC_TESTNET_SECRET')
+
+        # Khởi tạo Binance (futures — optional, not used for public order book)
         if binance_api_key and binance_secret:
             self.exchanges['binance'] = {
                 'apiKey': binance_api_key,
                 'secret': binance_secret,
-                'options': {'createMarketBuyOrderRequiresPrice': False}
+                'options': {
+                    'defaultType': 'future',
+                    'createMarketBuyOrderRequiresPrice': False,
+                },
+            }
+
+        # Khởi tạo MEXC futures (swap)
+        if mexc_api_key and mexc_secret:
+            self.exchanges['mexc'] = {
+                'apiKey': mexc_api_key,
+                'secret': mexc_secret,
+                'options': {'defaultType': 'swap'},
             }
         
         # Khởi tạo KuCoin

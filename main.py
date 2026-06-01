@@ -38,7 +38,8 @@ from utils.logger import log_info, log_error, log_warning, logger, safe_print, c
 from utils.helpers import show_time
 from utils.session_recovery import SessionRecovery
 from utils.telegram import TelegramNotifier
-from configs import PYTHON_COMMAND, ENABLE_TELEGRAM, BOT_MODES
+from utils.keys_store import ensure_keys_interactive, keys_for_exchange_service, load_keys
+from configs import PYTHON_COMMAND, ENABLE_TELEGRAM, BOT_MODES, FUTURES_SYMBOL
 
 configure_console_encoding()
 
@@ -247,7 +248,16 @@ async def find_best_symbol(exchange_service, exchanges):
         return default_pair
 
 
-async def run_bot(mode, symbol, usdt_amount, renew_time, exchanges, dry_run=False, symbols=None):
+async def run_bot(
+    mode,
+    symbol,
+    usdt_amount,
+    renew_time,
+    exchanges,
+    dry_run=False,
+    symbols=None,
+    credentials=None,
+):
     """
     Chạy bot giao dịch với các tham số đã cho.
     
@@ -269,8 +279,8 @@ async def run_bot(mode, symbol, usdt_amount, renew_time, exchanges, dry_run=Fals
     exchange_service = None
     
     try:
-        # Khởi tạo các dịch vụ
-        exchange_service = ExchangeService()
+        creds = credentials or keys_for_exchange_service(load_keys())
+        exchange_service = ExchangeService(credentials=creds)
         balance_service = BalanceService(exchange_service)
         order_service = OrderService(exchange_service)
         notification_service = NotificationService(ENABLE_TELEGRAM)
@@ -309,7 +319,10 @@ async def run_bot(mode, symbol, usdt_amount, renew_time, exchanges, dry_run=Fals
 
         # Single pair mode
         # Tìm cặp giao dịch nếu không được chỉ định
-        if not symbol:
+        if mode == 'classic':
+            symbol = FUTURES_SYMBOL
+            log_info(f'Classic futures mode: {symbol}')
+        elif not symbol:
             symbol = await find_best_symbol(exchange_service, exchanges)
         else:
             log_info(f"Sử dụng cặp giao dịch đã chỉ định: {symbol}")
@@ -376,7 +389,7 @@ async def run_bot(mode, symbol, usdt_amount, renew_time, exchanges, dry_run=Fals
                 log_warning(f"Không thể đóng toàn bộ kết nối pro: {str(close_error)}")
 
 
-async def main():
+async def main(credentials=None):
     """Hàm chính của ứng dụng."""
     try:
         # Thiết lập logging
@@ -469,7 +482,10 @@ async def main():
         i = 0
         while True:
             # Chạy bot với các tham số đã cho
-            profit_pct = await run_bot(mode, symbol, usdt_amount, renew_time, exchanges, dry_run, symbols)
+            profit_pct = await run_bot(
+                mode, symbol, usdt_amount, renew_time, exchanges, dry_run, symbols,
+                credentials=credentials,
+            )
             
             # Đọc số dư mới từ tệp
             with open('balance.txt', 'r') as f:
@@ -491,13 +507,20 @@ async def main():
         log_info("Chương trình kết thúc.")
 
 
+def _bootstrap_frozen_argv() -> None:
+    """Packaged app: default classic futures session without manual CLI args."""
+    if getattr(sys, 'frozen', False) and len(sys.argv) <= 1:
+        sys.argv.extend(['classic', '60', '100', 'binance', 'mexc', 'mexc'])
+
+
 if __name__ == "__main__":
-    # Tải biến môi trường
     load_dotenv()
-    
-    # Cấu hình mã hóa cho đầu vào/đầu ra
-    sys.stdin.reconfigure(encoding="utf-8")
-    sys.stdout.reconfigure(encoding="utf-8")
-    
-    # Chạy hàm main với asyncio
-    asyncio.run(main())
+    _bootstrap_frozen_argv()
+
+    if hasattr(sys.stdin, 'reconfigure'):
+        sys.stdin.reconfigure(encoding='utf-8')
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+
+    api_keys = ensure_keys_interactive()
+    asyncio.run(main(credentials=keys_for_exchange_service(api_keys)))

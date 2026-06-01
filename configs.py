@@ -23,11 +23,17 @@ FIRST_ORDERS_FILL_TIMEOUT = 300  # Thời gian chờ tối đa để fill đơn 
 # Danh sách các sàn giao dịch hỗ trợ
 SUPPORTED_EXCHANGES = ['kucoin', 'binance', 'bybit', 'okx', 'kucoinfutures', 'mexc']
 
-# Binance → MEXC pipeline
+# Binance → MEXC futures pipeline
+FUTURES_SYMBOL = os.getenv('FUTURES_SYMBOL', 'BTC/USDT:USDT')
 SIGNAL_EXCHANGE = os.getenv('SIGNAL_EXCHANGE', 'binance')
 EXECUTION_EXCHANGE = os.getenv('EXECUTION_EXCHANGE', 'mexc')
 LARGE_ORDER_THRESHOLD_BTC = float(os.getenv('LARGE_ORDER_THRESHOLD_BTC', '5.0'))
 ORDER_TTL_SECONDS = float(os.getenv('ORDER_TTL_SECONDS', '3.0'))
+BINANCE_WS_STREAM = os.getenv('BINANCE_WS_STREAM', 'btcusdt@depth20@100ms')
+BINANCE_WS_URL = os.getenv(
+    'BINANCE_WS_URL',
+    f'wss://fstream.binance.com/ws/{BINANCE_WS_STREAM}',
+)
 
 # Phí giao dịch của từng sàn
 EXCHANGE_FEES = {
